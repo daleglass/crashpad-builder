@@ -43,7 +43,7 @@ cp -v ../crashpad/out/Default/obj/util/libutil.a                                
 cp -v ../crashpad/out/Default/obj/client/libclient.a                                        out/Debug/lib/libcrashpad_client.a
 cp -v ../crashpad/out/Default/obj/third_party/mini_chromium/mini_chromium/base/libbase.a    out/Debug/lib/libbase.a
 cp -v ../crashpad/out/Default/crashpad_handler                                              out/Debug/crashpad_handler
-
+cp -v ../crashpad/out/Default/gen/build/chromeos_buildflags.h                               include/build/
 # Hack, fix later.
 ln -sf Debug out/Release
 
