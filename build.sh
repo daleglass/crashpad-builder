@@ -2,7 +2,7 @@
 set -e
 curdir=`pwd`
 
-[ ! -d "depot_tools"] && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[ ! -d "depot_tools" ] && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
 export PATH=$curdir/depot_tools:$PATH
 
