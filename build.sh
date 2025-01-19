@@ -9,9 +9,19 @@ export PATH=$curdir/depot_tools:$PATH
 [ ! -d "crashpad" ] && fetch crashpad
 
 cd crashpad
-gn gen out/Default
-ninja -C out/Default
+gn gen out/Debug "--args=is_debug=true"
+gn gen out/Release "--args=is_debug=false"
+
+echo "is_debug=true" >> out/Debug/args.gn
+echo "is_debug=false" >> out/Release/args.gn
+
+
+ninja -C out/Debug
+ninja -C out/Release
+
 git_commit=`git rev-parse HEAD | cut -c -8`
+git_date=`git show --no-patch --format=%cs HEAD`
+
 packaged_dir="crashpad_${git_commit}"
 
 cd ..
@@ -23,7 +33,7 @@ cd "$packaged_dir"
 # There might be some better way of doing this.
 mkdir -p include
 
-for dir in client util/file util/misc util/numeric ; do
+for dir in client util/file util/misc util/numeric util/synchronization; do
 	mkdir -p "include/$dir"
 	cp -v ../crashpad/$dir/*.h include/$dir/
 done
@@ -37,17 +47,31 @@ for dir in base build ; do
 	done
 done
 
+[ -d "out" ] && rm -rf "out"
 
-mkdir -p out/Debug/lib
-cp -v ../crashpad/out/Default/obj/util/libutil.a                                            out/Debug/lib/libcrashpad_util.a
-cp -v ../crashpad/out/Default/obj/client/libclient.a                                        out/Debug/lib/libcrashpad_client.a
-cp -v ../crashpad/out/Default/obj/third_party/mini_chromium/mini_chromium/base/libbase.a    out/Debug/lib/libbase.a
-cp -v ../crashpad/out/Default/crashpad_handler                                              out/Debug/crashpad_handler
-cp -v ../crashpad/out/Default/gen/build/chromeos_buildflags.h                               include/build/
-# Hack, fix later.
-ln -sf Debug out/Release
+for build_type in Debug Release ; do
+
+	mkdir -p out/${build_type}/lib
+	cp -v ../crashpad/out/${build_type}/obj/util/libutil.a                                            out/${build_type}/lib/libcrashpad_util.a
+	cp -v ../crashpad/out/${build_type}/obj/client/libclient.a                                        out/${build_type}/lib/libcrashpad_client.a
+        cp -v ../crashpad/out/${build_type}/obj/client/libcommon.a                                        out/${build_type}/lib/libcrashpad_common.a
+	cp -v ../crashpad/out/${build_type}/obj/handler/libhandler.a                                      out/${build_type}/lib/libcrashpad_handler.a
+
+	cp -v ../crashpad/out/${build_type}/obj/third_party/mini_chromium/mini_chromium/base/libbase.a    out/${build_type}/lib/libbase.a
+	cp -v ../crashpad/out/${build_type}/crashpad_handler                                              out/${build_type}/crashpad_handler
+	cp -v ../crashpad/out/${build_type}/gen/build/chromeos_buildflags.h                               include/build/
+done
+
+	# Hack, fix later.
+#ln -sf Debug out/Release
 
 cd ..
-tar -cjvf crashpad_linux_${git_commit}.tar.bz2 "$packaged_dir"
-md5sum crashpad_linux_${git_commit}.tar.bz2 >> MD5SUMS
+tar -c --xz -vf crashpad_linux_${git_date}_${git_commit}.tar.xz "$packaged_dir"
+md5sum          crashpad_linux_${git_date}_${git_commit}.tar.xz > MD5SUMS
+sha256sum       crashpad_linux_${git_date}_${git_commit}.tar.xz > SHA256SUMS
+
+echo "*** MD5 SUMS ***"
 cat MD5SUMS
+echo ""
+echo "*** SHA256 SUMS ***"
+cat SHA256SUMS
